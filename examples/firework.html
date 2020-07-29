@@ -20,42 +20,24 @@
       import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 
       const DEG2RAD = THREE.MathUtils.DEG2RAD
-
-      class Rotating extends ECSY.Component {}
-      Rotating.schema = {
-        x: { type: ECSY.Types.Number, default: 0 },
-        y: { type: ECSY.Types.Number, default: 0 },
-        z: { type: ECSY.Types.Number, default: 0 }
-      }
-
-      class RotatingSystem extends ECSY.System {
-        execute(dt) {
-          for (let entity of this.queries.rotating.results) {
-            const rotating = entity.getComponent(Rotating)
-            /** @type {ECSYTHREEX.Transform} */
-            const transform = entity.getMutableComponent(ECSYTHREEX.Transform)
-            transform.rotation.x += rotating.x * dt * DEG2RAD
-            transform.rotation.y += rotating.y * dt * DEG2RAD
-            transform.rotation.z += rotating.z * dt * DEG2RAD
-          }
-        }
-      }
-
-      RotatingSystem.queries = {
-        rotating: {
-          components: [Rotating, ECSYTHREEX.Transform]
-        }
-      }
+      const COUNT = 20
 
       /** Firework **/
       class Firework extends ECSY.Component {}
-      Firework.schema = {}
+      Firework.schema = {
+        radialSpeed: { type: ECSY.Types.Number, default: 2 },
+        y: { type: ECSY.Types.Number, default: 1 },
+        z: { type: ECSY.Types.Number, default: 1 }
+      }
 
       class FireworkSystem extends ECSY.System {
         execute(dt, t) {
           for (let entity of this.queries.translating.results) {
             const translating = entity.getComponent(Firework)
             /** @type {ECSYTHREEX.Transform} */
+            const transform = entity.getMutableComponent(ECSYTHREEX.Transform)
+            transform.position.y += 0.01
+            transform.position.z = Math.random() / 100
           }
         }
       }
@@ -65,75 +47,10 @@
           components: [Firework, ECSYTHREEX.Transform]
         }
       }
-      /** End **/
-
-      class Translating extends ECSY.Component {}
-      Translating.schema = {
-        x: { type: ECSY.Types.Number, default: 0 },
-        y: { type: ECSY.Types.Number, default: 0 },
-        z: { type: ECSY.Types.Number, default: 0 }
-      }
-
-      class TranslatingSystem extends ECSY.System {
-        execute(dt, t) {
-          for (let entity of this.queries.translating.results) {
-            const translating = entity.getComponent(Translating)
-            /** @type {ECSYTHREEX.Transform} */
-            const transform = entity.getMutableComponent(ECSYTHREEX.Transform)
-            transform.position.x += translating.x * dt
-            transform.position.y += translating.y * dt
-            transform.position.z += translating.z * dt
-          }
-        }
-      }
-
-      TranslatingSystem.queries = {
-        translating: {
-          components: [Translating, ECSYTHREEX.Transform]
-        }
-      }
-
-      class CircularTranslating extends ECSY.Component {}
-      CircularTranslating.schema = {
-        radius: { type: ECSY.Types.Number, default: 1 },
-        radialSpeed: { type: ECSY.Types.Number, default: 2 },
-        y: { type: ECSY.Types.Number, default: 0 },
-        z: { type: ECSY.Types.Number, default: 0 }
-      }
-
-      class CircularTranslatingSystem extends ECSY.System {
-        execute(dt, t) {
-          for (let entity of this.queries.translating.results) {
-            const translating = entity.getComponent(CircularTranslating)
-            /** @type {ECSYTHREEX.Transform} */
-            const transform = entity.getMutableComponent(ECSYTHREEX.Transform)
-
-            // transform.position.x = Math.sin(t) * translating.radius
-            // transform.position.z = Math.cos(t) * translating.radius
-            if (transform.position.y <= 1) {
-              transform.position.y += 0.01
-              transform.position.z += 0.01
-            }
-          }
-        }
-      }
-
-      CircularTranslatingSystem.queries = {
-        translating: {
-          components: [CircularTranslating, ECSYTHREEX.Transform]
-        }
-      }
-
       const world = new ECSYTHREE.ECSYThreeWorld()
         // .registerSystem(ECSYTHREE.VRControllerSystem)
-        .registerSystem(RotatingSystem)
-        .registerSystem(TranslatingSystem)
-        .registerSystem(CircularTranslatingSystem)
         .registerSystem(FireworkSystem)
         .registerComponent(ECSYTHREEX.Transform)
-        .registerComponent(Rotating)
-        .registerComponent(Translating)
-        .registerComponent(CircularTranslating)
         .registerComponent(Firework)
 
       PARTICLES.initializeParticleSystem(world)
@@ -188,439 +105,50 @@
 
       console.log("sharedParticleMesh", sharedParticleMesh)
 
-      const coneGeo2 = new THREE.ConeBufferGeometry(0.1, 0.5)
-      const coneMesh2 = new THREE.Mesh(
-        coneGeo2,
-        new THREE.MeshStandardMaterial({ color: "pink" })
-      )
-
-      const boxGeo2 = new THREE.BoxBufferGeometry(0.2, 0.2, 0.2)
-      const boxMesh2 = new THREE.Mesh(
-        boxGeo2,
-        new THREE.MeshStandardMaterial({ color: "green" })
-      )
-
       /** Create Geometry Figure**/
 
       const geometry = new THREE.SphereGeometry(1.25, 8, 8)
       const material = new THREE.MeshBasicMaterial({ color: 0x5c53ff })
-      const cone = new THREE.Mesh(geometry, material)
-      cone.scale.x = 0.08
-      cone.scale.y = 0.08
-      cone.scale.z = 0.08
+      const circleGeometry = new THREE.Mesh(geometry, material)
+      circleGeometry.scale.x = 0.08
+      circleGeometry.scale.y = 0.08
+      circleGeometry.scale.z = 0.08
 
       /** End **/
 
-      const object = world
-        .createEntity()
-        .addObject3DComponent(cone.clone(), scene)
-        .addComponent(CircularTranslating, {
-          speed: 2
-        })
-        .addComponent(ECSYTHREEX.Transform, {
-          position: { x: 0, y: 0, z: 0 },
-          rotation: { x: 0, y: 0, z: 0 }
-        })
-        .addComponent(ECSYTHREEX.Parent, { value: scene })
-      console.log("object", object)
+      for (let i = 0; i < COUNT; i++) {
+        setTimeout(() => {
+          const object = world
+            .createEntity()
+            .addObject3DComponent(circleGeometry.clone(), scene)
+            .addComponent(Firework, {
+              speed: 1,
+              z: i
+            })
+            .addComponent(ECSYTHREEX.Transform, {
+              position: { x: 0, y: 0, z: 0 },
+              rotation: { x: 0, y: 0, z: 0 }
+            })
+            .addComponent(ECSYTHREEX.Parent, { value: scene })
 
-      // const objectBox = world
-      //   .createEntity()
-      //   .addObject3DComponent(boxMesh2)
-      //   .addComponent(ECSYTHREEX.Transform, {
-      //     position: { x: 0, y: 0, z: 0 },
-      //     rotation: { x: 0, y: 0, z: 0 }
-      //   })
-      //   .addComponent(ECSYTHREEX.Parent, { value: object })
-
-      world
-        .createEntity()
-        .addComponent(PARTICLES.ParticleEmitter, {
-          particleMesh: sharedParticleMesh,
-          atlas: "fireworks_sheet.png",
-          textureFrame: { cols: 5, rows: 5 },
-          count: 1,
-          lifeTime: [5, 1],
-          scales: [15, 20],
-          syncTransform: true
-        })
-        .addComponent(ECSYTHREEX.Transform, {
-          position: { x: 0, y: 0, z: 0 },
-          rotation: { x: 0, y: 0, z: 0 }
-        })
-        .addComponent(ECSYTHREEX.Parent, { value: object })
-
-      // const pep = world
-      //   .createEntity()
-      //   .addObject3DComponent()
-
-      // world
-      //   .createEntity()
-      //   .addComponent(PARTICLES.ParticleEmitter, {
-      //     particleMesh: sharedParticleMesh,
-      //     atlas: "white2x2.png",
-      //     count: 100,
-      //     lifeTime: 3,
-      //     worldAcceleration: { x: 0, y: -0.1, z: 0 },
-      //     velocity: { x: 0, y: 0.2, z: 0 }, //() => PARTICLES.randomize({x:-.5,y:.25,z:-.5}, {x:.5,y:.5,z:.5}),
-      //     colors: [
-      //       { r: 0, g: 1, b: 1 },
-      //       { r: 0, g: 0, b: 0 }
-      //     ],
-      //     scales: [1, 0.9, 0],
-      //     syncTransform: true
-      //   })
-      //   .addComponent(ECSYTHREEX.Transform, {
-      //     position: { x: -1, y: 0, z: -4 },
-      //     rotation: { x: 0, y: 0, z: Math.PI / 2 }
-      //   })
-      //   .addComponent(ECSYTHREEX.Parent, { value: scene })
-      //   .addComponent(Rotating, { x: 0, y: 0, z: 60 })
-      //   .addComponent(Translating, { x: 0.1, y: 0, z: 0 })
-      //
-      // world
-      //   .createEntity()
-      //   .addComponent(PARTICLES.ParticleEmitter, {
-      //     particleMesh: sharedParticleMesh,
-      //     atlas: "explosion_sheet.png",
-      //     textureFrame: { cols: 5, rows: 5 },
-      //     count: 20,
-      //     lifeTime: [0.3, 0.8],
-      //     repeatTime: 3.9,
-      //     get offset() {
-      //       return PARTICLES.randomSphereOffset(0.03)
-      //     },
-      //     get scales() {
-      //       return PARTICLES.randomize([15], [20])
-      //     }
-      //   })
-      //   .addComponent(ECSYTHREEX.Transform, {
-      //     position: { x: 1, y: 0, z: -4 },
-      //     rotation: { x: 0, y: 0, z: 0 }
-      //   })
-      //   .addComponent(ECSYTHREEX.Parent, { value: scene })
-      //
-      // world
-      //   .createEntity()
-      //   .addComponent(PARTICLES.ParticleEmitter, {
-      //     particleMesh: sharedParticleMesh,
-      //     atlas: "fireworks_sheet.png",
-      //     textureFrame: { cols: 5, rows: 5 },
-      //     count: 6,
-      //     lifeTime: [1, 2],
-      //     repeatTime: 8,
-      //     get offset() {
-      //       return PARTICLES.randomCubeOffset(0.2)
-      //     },
-      //     scales: [20]
-      //   })
-      //   .addComponent(ECSYTHREEX.Transform, {
-      //     position: { x: 2, y: 0, z: -4 },
-      //     rotation: { x: 0, y: 0, z: 0 }
-      //   })
-      //   .addComponent(ECSYTHREEX.Parent, { value: scene })
-      //
-      // world
-      //   .createEntity()
-      //   .addComponent(PARTICLES.ParticleEmitter, {
-      //     particleMesh: sharedParticleMesh,
-      //     atlas: "blob.png",
-      //     count: 200,
-      //     lifeTime: 5,
-      //     get offset() {
-      //       return PARTICLES.randomSphereOffset(0.25)
-      //     },
-      //     colors: [{ r: 1, g: 0, b: 0 }],
-      //     angularVelocity: { x: 160, y: 0, z: 0 }
-      //   })
-      //   .addComponent(ECSYTHREEX.Transform, {
-      //     position: { x: -2, y: 0, z: -4 },
-      //     rotation: { x: 0, y: 0, z: 0 }
-      //   })
-      //   .addComponent(ECSYTHREEX.Parent, { value: scene })
-
-      // world
-      //   .createEntity()
-      //   .addComponent(PARTICLES.ParticleEmitter, {
-      //     particleMesh: sharedParticleMesh,
-      //     atlas: "blob.png",
-      //     count: 10,
-      //     lifeTime: 9,
-      //     get offset() {
-      //       return PARTICLES.randomSphereOffset(0.25)
-      //     },
-      //     colors: [new THREE.Color("purple")],
-      //     orbitalVelocity: 120,
-      //     scales: [2]
-      //   })
-      //   .addComponent(ECSYTHREEX.Transform, {
-      //     position: { x: -3, y: 0, z: -4 },
-      //     rotation: { x: 0, y: 0, z: 0 }
-      //   })
-      //   .addComponent(ECSYTHREEX.Parent, { value: scene })
-      //
-      // world
-      //   .createEntity()
-      //   .addComponent(PARTICLES.ParticleEmitter, {
-      //     particleMesh: sharedParticleMesh,
-      //     atlas: "blob.png",
-      //     count: 200,
-      //     lifeTime: 2,
-      //     colors: [new THREE.Color("green")],
-      //     radialAcceleration: 0.3,
-      //     scales: [2, 0]
-      //   })
-      //   .addComponent(ECSYTHREEX.Transform, {
-      //     position: { x: -4, y: 0, z: -4 },
-      //     rotation: { x: 0, y: 0, z: 0 }
-      //   })
-      //   .addComponent(ECSYTHREEX.Parent, { value: scene })
-      //
-      // world
-      //   .createEntity()
-      //   .addComponent(PARTICLES.ParticleEmitter, {
-      //     particleMesh: sharedParticleMesh,
-      //     atlas: "blob.png",
-      //     get offset() {
-      //       return PARTICLES.randomEllipsoidOffset(0.01, 0.01, 0)
-      //     },
-      //     count: 400,
-      //     lifeTime: [1.5, 2],
-      //     repeatTime: 3,
-      //     radialAcceleration: 0.15,
-      //     scales: [2, 0],
-      //     burst: 1
-      //   })
-      //   .addComponent(ECSYTHREEX.Transform, {
-      //     position: { x: -4, y: 1, z: -4 },
-      //     rotation: { x: 0, y: 0, z: 0 }
-      //   })
-      //   .addComponent(ECSYTHREEX.Parent, { value: scene })
-      //
-      // world
-      //   .createEntity()
-      //   .addComponent(PARTICLES.ParticleEmitter, {
-      //     particleMesh: sharedParticleMesh,
-      //     atlas: "blob.png",
-      //     get offset() {
-      //       return PARTICLES.randomCubeOffset(0.5)
-      //     },
-      //     count: 20,
-      //     lifeTime: 500,
-      //     colors: [new THREE.Color("yellow")],
-      //     burst: 1,
-      //     scales: [2],
-      //     brownianSpeed: 0.1,
-      //     brownianScale: 1
-      //   })
-      //   .addComponent(ECSYTHREEX.Transform, {
-      //     position: { x: -3, y: 1, z: -4 },
-      //     rotation: { x: 0, y: 0, z: 0 }
-      //   })
-      //   .addComponent(ECSYTHREEX.Parent, { value: scene })
-      //
-      // world
-      //   .createEntity()
-      //   .addComponent(PARTICLES.ParticleEmitter, {
-      //     particleMesh: sharedParticleMesh,
-      //     atlas: "numbered_8x8_1024x1024.jpg",
-      //     textureFrame: { cols: 8, rows: 8 },
-      //     count: 1,
-      //     lifeTime: 32,
-      //     worldUp: true,
-      //     scales: [20],
-      //     orientations: [40, 400]
-      //   })
-      //   .addComponent(ECSYTHREEX.Transform, {
-      //     position: { x: 0, y: 1, z: -4 },
-      //     rotation: { x: 0, y: 0, z: 0 }
-      //   })
-      //   .addComponent(ECSYTHREEX.Parent, { value: scene })
-      //
-      // world
-      //   .createEntity()
-      //   .addComponent(PARTICLES.ParticleEmitter, {
-      //     particleMesh: sharedParticleMesh,
-      //     atlas: "numbered_2x2_64x64.jpg",
-      //     textureFrame: { cols: 2, rows: 2 },
-      //     frames: [1, 3],
-      //     count: 10,
-      //     lifeTime: 2,
-      //     repeatTime: 20,
-      //     frameStyle: "random",
-      //     scales: [0, 20, 0],
-      //     worldUp: true
-      //   })
-      //   .addComponent(ECSYTHREEX.Transform, {
-      //     position: { x: -1, y: 1, z: -4 },
-      //     rotation: { x: 0, y: 0, z: 0 }
-      //   })
-      //   .addComponent(ECSYTHREEX.Parent, { value: scene })
-      //
-      // world
-      //   .createEntity()
-      //   .addComponent(PARTICLES.ParticleEmitter, {
-      //     particleMesh: sharedParticleMesh,
-      //     atlas: "numbered_2x2_64x64.jpg",
-      //     textureFrame: { cols: 2, rows: 2 },
-      //     count: 20,
-      //     lifeTime: 12,
-      //     scales: [5],
-      //     offset: { x: 0.25, y: 0, z: 0 },
-      //     angularVelocity: { x: 0, y: 60, z: 0 },
-      //     acceleration: { x: 0, y: 0.01, z: 0 }
-      //   })
-      //   .addComponent(ECSYTHREEX.Transform, {
-      //     position: { x: -2, y: 1, z: -4 },
-      //     rotation: { x: 0, y: 0, z: 0 }
-      //   })
-      //   .addComponent(ECSYTHREEX.Parent, { value: scene })
-      //
-      // world
-      //   .createEntity()
-      //   .addComponent(PARTICLES.ParticleEmitter, {
-      //     particleMesh: sharedParticleMesh,
-      //     atlas: "arrow.png",
-      //     count: 20,
-      //     lifeTime: 6,
-      //     scales: [5],
-      //     get offset() {
-      //       return PARTICLES.randomSphereOffset(0.25)
-      //     },
-      //     orbitalVelocity: 120,
-      //     velocityScale: 2,
-      //     velocityScaleMin: 0.05
-      //   })
-      //   .addComponent(ECSYTHREEX.Transform, {
-      //     position: { x: 1, y: 1, z: -4 },
-      //     rotation: { x: 0, y: 0, z: 0 }
-      //   })
-      //   .addComponent(ECSYTHREEX.Parent, { value: scene })
-      //
-      // world
-      //   .createEntity()
-      //   .addComponent(PARTICLES.ParticleEmitter, {
-      //     particleMesh: sharedParticleMesh,
-      //     atlas: "raindash.png",
-      //     count: 200,
-      //     lifeTime: 0.4,
-      //     repeatTime: 2,
-      //     scales: [2],
-      //     // @ts-ignore
-      //     get offset() {
-      //       return PARTICLES.randomBoxOffset(0.3, 0, 0.3)
-      //     },
-      //     get velocity() {
-      //       return PARTICLES.randomize(
-      //         { x: -0.3, y: -2, z: 0.1 },
-      //         { x: -0.2, y: -1.5, z: 0.1 }
-      //       )
-      //     },
-      //     velocityScale: 1,
-      //     velocityScaleMax: 3,
-      //     get colors() {
-      //       return PARTICLES.randomize(
-      //         [{ r: 0, g: 0.1, b: 0.5 }],
-      //         [{ r: 0, g: 0.2, b: 0.4 }]
-      //       )
-      //     }
-      //   })
-      //   .addComponent(ECSYTHREEX.Transform, {
-      //     position: { x: 2, y: 1.5, z: -4 },
-      //     rotation: { x: 0, y: 0, z: 0 }
-      //   })
-      //   .addComponent(ECSYTHREEX.Parent, { value: scene })
-      //
-      // world
-      //   .createEntity()
-      //   .addComponent(PARTICLES.ParticleEmitter, {
-      //     particleMesh: sharedParticleMesh,
-      //     atlas: "white2x2.png",
-      //     count: 200,
-      //     lifeTime: 0.1,
-      //     repeatTime: 2,
-      //     get offset() {
-      //       return PARTICLES.randomBoxOffset(0.3, 0, 0.3)
-      //     },
-      //     get velocity() {
-      //       return PARTICLES.randomize(
-      //         { x: -1, y: 1, z: 1 },
-      //         { x: 1, y: 0.8, z: -1 }
-      //       )
-      //     },
-      //     get colors() {
-      //       return PARTICLES.randomize(
-      //         [{ r: 0, g: 0.2, b: 0.6 }],
-      //         [{ r: 0, g: 0.1, b: 0.4 }]
-      //       )
-      //     },
-      //     worldAcceleration: { x: 0, y: -10, z: 0 }
-      //   })
-      //   .addComponent(ECSYTHREEX.Transform, {
-      //     position: { x: 1.9, y: 0.7, z: -4 },
-      //     rotation: { x: 0, y: 0, z: 0 }
-      //   })
-      //   .addComponent(ECSYTHREEX.Parent, { value: scene })
-      //
-      // world
-      //   .createEntity()
-      //   .addComponent(PARTICLES.ParticleEmitter, {
-      //     particleMesh: sharedParticleMesh,
-      //     atlas: "fog.png",
-      //     count: 100,
-      //     lifeTime: 5,
-      //     repeatTime: 10,
-      //     get offset() {
-      //       return PARTICLES.randomBoxOffset(0.3, 0.1, 0.3)
-      //     },
-      //     get velocity() {
-      //       return PARTICLES.randomize(
-      //         { x: 0.03, y: 0.02, z: 0.03 },
-      //         { x: -0.03, y: 0, z: -0.03 }
-      //       )
-      //     },
-      //     get colors() {
-      //       let x = Math.random()
-      //       return x > 0.7
-      //         ? [{ r: 0.8, g: 0.8, b: 0.8 }]
-      //         : x > 0.2
-      //         ? [{ r: 0.9, g: 0.9, b: 0.9 }]
-      //         : [{ r: 1, g: 1, b: 1 }]
-      //     },
-      //     opacities: [0.5, 1, 0],
-      //     worldUp: true,
-      //     get scales() {
-      //       return PARTICLES.randomize([10], [15])
-      //     },
-      //     get orientations() {
-      //       return [~~(Math.random() * 4) * 90]
-      //     }
-      //   })
-      //   .addComponent(ECSYTHREEX.Transform, {
-      //     position: { x: 3, y: 1, z: -4 },
-      //     rotation: { x: 0, y: 0, z: 0 }
-      //   })
-      //   .addComponent(ECSYTHREEX.Parent, { value: scene })
-      //
-      // world
-      //   .createEntity()
-      //   .addComponent(PARTICLES.ParticleEmitter, {
-      //     particleMesh: coneParticleMesh,
-      //     atlas: "blob.png",
-      //     count: 200,
-      //     lifeTime: 5,
-      //     get offset() {
-      //       return PARTICLES.randomSphereOffset(0.25)
-      //     },
-      //     colors: [{ r: 0, g: 1, b: 1 }],
-      //     angularVelocity: { x: 160, y: 0, z: 0 },
-      //     scales: [0.03]
-      //   })
-      //   .addComponent(ECSYTHREEX.Transform, {
-      //     position: { x: -2, y: -1, z: -4 },
-      //     rotation: { x: 0, y: 0, z: 0 }
-      //   })
-      //   .addComponent(ECSYTHREEX.Parent, { value: scene })
+          world
+            .createEntity()
+            .addComponent(PARTICLES.ParticleEmitter, {
+              particleMesh: sharedParticleMesh,
+              atlas: "fireworks_sheet.png",
+              textureFrame: { cols: 5, rows: 5 },
+              count: 1,
+              lifeTime: 5,
+              scales: [0, 15],
+              syncTransform: true
+            })
+            .addComponent(ECSYTHREEX.Transform, {
+              position: { x: 0, y: 0, z: 0 },
+              rotation: { x: 0, y: 0, z: 0 }
+            })
+            .addComponent(ECSYTHREEX.Parent, { value: object })
+        }, 3000 * i)
+      }
 
       world.execute(0.000001, 0.000001)
 
