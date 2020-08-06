@@ -25,9 +25,9 @@
       /** Firework **/
       class Firework extends ECSY.Component {}
       Firework.schema = {
-        radialSpeed: { type: ECSY.Types.Number, default: 2 },
-        y: { type: ECSY.Types.Number, default: 1 },
-        z: { type: ECSY.Types.Number, default: 1 }
+        x: { type: ECSY.Types.Number, default: 0 },
+        y: { type: ECSY.Types.Number, default: 0 },
+        z: { type: ECSY.Types.Number, default: 0 }
       }
 
       class FireworkSystem extends ECSY.System {
@@ -36,8 +36,17 @@
             const translating = entity.getComponent(Firework)
             /** @type {ECSYTHREEX.Transform} */
             const transform = entity.getMutableComponent(ECSYTHREEX.Transform)
-            transform.position.y += 0.01
-            transform.position.z = Math.random() / 100
+            const acc = entity.getComponent(PARTICLES.ParticleEmitter)
+
+            if (transform.position.y < 2) {
+              transform.position.x += translating.x
+              transform.position.y += translating.y
+              transform.position.z += translating.z
+            } else {
+              entity.remove()
+            }
+
+            console.log(entity)
           }
         }
       }
@@ -59,15 +68,8 @@
 
       const { scene, renderer, camera } = data.entities
 
-      // for (let id = 0; id <= 1; id++) {
-      //   world
-      //     .createEntity()
-      //     // .addComponent(ECSYTHREE.VRController, { id })
-      //     .addComponent(ECSYTHREEX.Parent, { value: scene })
-      // }
-
       const cam = camera.getComponent(ECSYTHREE.Object3DComponent)["value"]
-      cam.position.set(-1, 0.5, -1).multiplyScalar(0.5)
+      cam.position.set(-1, 0.5, -1).multiplyScalar(1)
       cam.lookAt(new THREE.Vector3())
 
       setTimeout(() => {
@@ -75,16 +77,6 @@
         const controls = new OrbitControls(cam, domElement)
       }, 0)
 
-      const coneGeo = new THREE.ConeBufferGeometry()
-      const coneMesh = new THREE.Mesh(
-        coneGeo,
-        new THREE.MeshStandardMaterial({ color: "pink" })
-      )
-      const coneParticleMesh = PARTICLES.createParticleMesh({
-        mesh: coneMesh,
-        style: "mesh",
-        particleCount: 2000
-      })
       const sharedParticleMesh = PARTICLES.createParticleMesh({
         texture: "assets/spritesheet.png",
         particleCount: 20000,
@@ -101,7 +93,6 @@
       scene3D.add(new THREE.AmbientLight(0x404040))
       scene3D.add(new THREE.DirectionalLight())
       scene3D.add(sharedParticleMesh)
-      scene3D.add(coneParticleMesh)
 
       console.log("sharedParticleMesh", sharedParticleMesh)
 
@@ -116,39 +107,38 @@
 
       /** End **/
 
-      for (let i = 0; i < COUNT; i++) {
-        setTimeout(() => {
-          const object = world
-            .createEntity()
-            .addObject3DComponent(circleGeometry.clone(), scene)
-            .addComponent(Firework, {
-              speed: 1,
-              z: i
-            })
-            .addComponent(ECSYTHREEX.Transform, {
-              position: { x: 0, y: 0, z: 0 },
-              rotation: { x: 0, y: 0, z: 0 }
-            })
-            .addComponent(ECSYTHREEX.Parent, { value: scene })
+      const tail = world
+        .createEntity("tail")
+        .addComponent(PARTICLES.ParticleEmitter, {
+          particleMesh: sharedParticleMesh,
+          atlas: "blob.png",
+          count: 100,
+          lifeTime: 2,
+          colors: [new THREE.Color(0x655cfe)],
+          scales: [2, 0],
+          syncTransform: true
+        })
+        .addComponent(ECSYTHREEX.Transform, {})
+        .addComponent(Firework, { x: 0, y: 0.01, z: 0.01 })
+        .addComponent(ECSYTHREEX.Parent, { value: scene })
 
-          world
-            .createEntity()
-            .addComponent(PARTICLES.ParticleEmitter, {
-              particleMesh: sharedParticleMesh,
-              atlas: "fireworks_sheet.png",
-              textureFrame: { cols: 5, rows: 5 },
-              count: 1,
-              lifeTime: 5,
-              scales: [0, 15],
-              syncTransform: true
-            })
-            .addComponent(ECSYTHREEX.Transform, {
-              position: { x: 0, y: 0, z: 0 },
-              rotation: { x: 0, y: 0, z: 0 }
-            })
-            .addComponent(ECSYTHREEX.Parent, { value: object })
-        }, 3000 * i)
-      }
+      world
+        .createEntity("explosion")
+        .addComponent(PARTICLES.ParticleEmitter, {
+          particleMesh: sharedParticleMesh,
+          atlas: "blob.png",
+          count: 200,
+          lifeTime: 4,
+          colors: [new THREE.Color(0x655cfe)],
+          scales: [1],
+          // opacities: [0],
+          burst: 1,
+          radialAcceleration: 0.3,
+          syncTransform: true
+        })
+        .addComponent(ECSYTHREEX.Transform, {
+          position: { x: 0, y: 2, z: 2 }
+        })
 
       world.execute(0.000001, 0.000001)
 
