@@ -20,10 +20,14 @@
       import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 
       const DEG2RAD = THREE.MathUtils.DEG2RAD
-      const COUNT = 20
+      const TIME = 2
 
       /** FireworkTail **/
+
       class FireworkTail extends ECSY.Component {}
+
+      class FireworkExplosion extends ECSY.System {}
+
       FireworkTail.schema = {
         x: { type: ECSY.Types.Number, default: 0 },
         y: { type: ECSY.Types.Number, default: 0 },
@@ -32,62 +36,71 @@
 
       class FireworkTailSystem extends ECSY.System {
         execute(dt, t) {
-          for (let entity of this.queries.translating.results) {
+          this.queries.tail.results.forEach(entity => {
             const translating = entity.getComponent(FireworkTail)
-            /** @type {ECSYTHREEX.Transform} */
             const transform = entity.getMutableComponent(ECSYTHREEX.Transform)
-            const acc = entity.getComponent(PARTICLES.ParticleEmitter)
-
             if (transform.position.y < 2) {
               transform.position.x += translating.x
               transform.position.y += translating.y
               transform.position.z += translating.z
             } else {
-              entity.remove()
+              entity.removeComponent(FireworkTail)
             }
+          })
 
-            console.log(entity)
-          }
-        }
-      }
+          this.queries.tail.removed.forEach(entity => {
+            const component = entity.getRemovedComponent(FireworkTail)
+            const dur = t - TIME
 
-      FireworkTailSystem.queries = {
-        translating: {
-          components: [FireworkTail, ECSYTHREEX.Transform]
-        }
-      }
-
-      //** FireworkExplosion **//
-      class FireworkExplosion extends ECSY.Component {}
-
-      FireworkExplosion.schema = {
-        time: { type: ECSY.Types.Number, default: 2 }
-      }
-
-      class FireworkExplosionSystem extends ECSY.System {
-        execute(dt, t) {
-          let listsExplosion = this.queries.explosion
-
-          listsExplosion.removed.forEach(entity => {
-            if (entity.hasRemovedComponent(FireworkTail)) {
-              let sleeping = entity.getRemovedComponent(FireworkTail)
-              console.log("sleeping>>>", sleeping)
-              // let duration = elapsedTime - sleeping.startSleepingTime
-            }
+            setTimeout(() => {
+              world
+                .createEntity("explosion")
+                .addComponent(PARTICLES.ParticleEmitter, {
+                  particleMesh: sharedParticleMesh,
+                  atlas: "blob.png",
+                  count: 200,
+                  lifeTime: 4,
+                  colors: [new THREE.Color(0x655cfe)],
+                  scales: [1],
+                  // opacities: [0],
+                  burst: 1,
+                  radialAcceleration: 0.15,
+                  syncTransform: true
+                })
+                .addComponent(ECSYTHREEX.Transform, {
+                  position: { x: 0, y: 2, z: 2 }
+                })
+                .addComponent(FireworkExplosion)
+            }, dur)
+            console.log(component, "dur>>>", dur)
           })
         }
       }
 
-      FireworkExplosionSystem.queries = {
-        explosion: {
-          components: [FireworkExplosion, FireworkTail],
+      FireworkTailSystem.queries = {
+        tail: {
+          components: [FireworkTail, ECSYTHREEX.Transform],
           listen: {
             removed: true
           }
         }
       }
 
-      //** **//
+      //** FireworkExplosion **//
+
+      FireworkExplosion.schema = {}
+
+      class FireworkExplosionSystem extends ECSY.System {
+        execute(dt, t) {
+          let listsExplosion = this.queries.explosion
+        }
+      }
+
+      FireworkExplosionSystem.queries = {
+        explosion: {
+          components: [FireworkExplosion]
+        }
+      }
 
       const world = new ECSYTHREE.ECSYThreeWorld()
         // .registerSystem(ECSYTHREE.VRControllerSystem)
@@ -156,24 +169,6 @@
         .addComponent(ECSYTHREEX.Transform, {})
         .addComponent(FireworkTail, { x: 0, y: 0.01, z: 0.01 })
         .addComponent(ECSYTHREEX.Parent, { value: scene })
-
-      world
-        .createEntity("explosion")
-        .addComponent(PARTICLES.ParticleEmitter, {
-          particleMesh: sharedParticleMesh,
-          atlas: "blob.png",
-          count: 200,
-          lifeTime: 4,
-          colors: [new THREE.Color(0x655cfe)],
-          scales: [1],
-          // opacities: [0],
-          burst: 1,
-          radialAcceleration: 0.3,
-          syncTransform: true
-        })
-        .addComponent(ECSYTHREEX.Transform, {
-          position: { x: 0, y: 2, z: 2 }
-        })
 
       world.execute(0.000001, 0.000001)
 
