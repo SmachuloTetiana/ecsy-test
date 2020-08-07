@@ -22,18 +22,18 @@
       const DEG2RAD = THREE.MathUtils.DEG2RAD
       const COUNT = 20
 
-      /** Firework **/
-      class Firework extends ECSY.Component {}
-      Firework.schema = {
+      /** FireworkTail **/
+      class FireworkTail extends ECSY.Component {}
+      FireworkTail.schema = {
         x: { type: ECSY.Types.Number, default: 0 },
         y: { type: ECSY.Types.Number, default: 0 },
         z: { type: ECSY.Types.Number, default: 0 }
       }
 
-      class FireworkSystem extends ECSY.System {
+      class FireworkTailSystem extends ECSY.System {
         execute(dt, t) {
           for (let entity of this.queries.translating.results) {
-            const translating = entity.getComponent(Firework)
+            const translating = entity.getComponent(FireworkTail)
             /** @type {ECSYTHREEX.Transform} */
             const transform = entity.getMutableComponent(ECSYTHREEX.Transform)
             const acc = entity.getComponent(PARTICLES.ParticleEmitter)
@@ -51,16 +51,51 @@
         }
       }
 
-      FireworkSystem.queries = {
+      FireworkTailSystem.queries = {
         translating: {
-          components: [Firework, ECSYTHREEX.Transform]
+          components: [FireworkTail, ECSYTHREEX.Transform]
         }
       }
+
+      //** FireworkExplosion **//
+      class FireworkExplosion extends ECSY.Component {}
+
+      FireworkExplosion.schema = {
+        time: { type: ECSY.Types.Number, default: 2 }
+      }
+
+      class FireworkExplosionSystem extends ECSY.System {
+        execute(dt, t) {
+          let listsExplosion = this.queries.explosion
+
+          listsExplosion.removed.forEach(entity => {
+            if (entity.hasRemovedComponent(FireworkTail)) {
+              let sleeping = entity.getRemovedComponent(FireworkTail)
+              console.log("sleeping>>>", sleeping)
+              // let duration = elapsedTime - sleeping.startSleepingTime
+            }
+          })
+        }
+      }
+
+      FireworkExplosionSystem.queries = {
+        explosion: {
+          components: [FireworkExplosion, FireworkTail],
+          listen: {
+            removed: true
+          }
+        }
+      }
+
+      //** **//
+
       const world = new ECSYTHREE.ECSYThreeWorld()
         // .registerSystem(ECSYTHREE.VRControllerSystem)
-        .registerSystem(FireworkSystem)
+        .registerSystem(FireworkTailSystem)
+        .registerSystem(FireworkExplosionSystem)
         .registerComponent(ECSYTHREEX.Transform)
-        .registerComponent(Firework)
+        .registerComponent(FireworkTail)
+        .registerComponent(FireworkExplosion)
 
       PARTICLES.initializeParticleSystem(world)
 
@@ -119,7 +154,7 @@
           syncTransform: true
         })
         .addComponent(ECSYTHREEX.Transform, {})
-        .addComponent(Firework, { x: 0, y: 0.01, z: 0.01 })
+        .addComponent(FireworkTail, { x: 0, y: 0.01, z: 0.01 })
         .addComponent(ECSYTHREEX.Parent, { value: scene })
 
       world
