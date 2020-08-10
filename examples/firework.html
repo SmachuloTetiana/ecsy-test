@@ -64,7 +64,7 @@
                   particleMesh: sharedParticleMesh,
                   atlas: "blob.png",
                   count: 200,
-                  lifeTime: 4,
+                  lifeTime: 5,
                   colors: [new THREE.Color(0x655cfe)],
                   scales: [1],
                   burst: 1,
@@ -96,19 +96,32 @@
 
       //** FireworkExplosion **//
 
-      class FireworkExplosion extends ECSY.System {}
+      class FireworkExplosion extends ECSY.Component {}
 
-      FireworkExplosion.schema = {}
+      FireworkExplosion.schema = {
+        timeExplosion: { type: ECSY.Types.Number, default: 1 }
+      }
 
       class FireworkExplosionSystem extends ECSY.System {
         execute(dt, t) {
           let listsExplosion = this.queries.explosion
+
+          listsExplosion.added.forEach(entity => {
+            const component = entity.getComponent(FireworkExplosion)
+            let duraction = t - component.timeExplosion
+
+            console.log("duraction>>>", duraction)
+          })
         }
       }
 
       FireworkExplosionSystem.queries = {
         explosion: {
-          components: [FireworkExplosion]
+          components: [FireworkExplosion],
+          listen: {
+            removed: true,
+            added: true
+          }
         }
       }
 
