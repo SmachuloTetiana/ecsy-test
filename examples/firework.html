@@ -20,13 +20,11 @@
       import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 
       const DEG2RAD = THREE.MathUtils.DEG2RAD
-      const TIME = 2
+      let TIME = 3
 
       /** FireworkTail **/
 
       class FireworkTail extends ECSY.Component {}
-
-      class FireworkExplosion extends ECSY.System {}
 
       FireworkTail.schema = {
         x: { type: ECSY.Types.Number, default: 0 },
@@ -39,20 +37,27 @@
           this.queries.tail.results.forEach(entity => {
             const translating = entity.getComponent(FireworkTail)
             const transform = entity.getMutableComponent(ECSYTHREEX.Transform)
-            if (transform.position.y < 2) {
-              transform.position.x += translating.x
-              transform.position.y += translating.y
-              transform.position.z += translating.z
-            } else {
-              entity.removeComponent(FireworkTail)
+            if (t < 100) {
+              let dur = t - TIME
+              // console.log("dur>>>", dur)
+
+              if (dur < 0 && dur > -TIME) {
+                transform.position.x += translating.x
+                transform.position.y += translating.y
+                transform.position.z += translating.z
+              } else {
+                entity.removeComponent(FireworkTail)
+                translating.x = transform.position.x
+                translating.y = transform.position.y
+                translating.z = transform.position.z
+              }
             }
           })
 
           this.queries.tail.removed.forEach(entity => {
-            const component = entity.getRemovedComponent(FireworkTail)
-            const dur = t - TIME
+            if (entity.hasRemovedComponent(FireworkTail)) {
+              const removedComponent = entity.getRemovedComponent(FireworkTail)
 
-            setTimeout(() => {
               world
                 .createEntity("explosion")
                 .addComponent(PARTICLES.ParticleEmitter, {
@@ -62,17 +67,18 @@
                   lifeTime: 4,
                   colors: [new THREE.Color(0x655cfe)],
                   scales: [1],
-                  // opacities: [0],
                   burst: 1,
                   radialAcceleration: 0.15,
                   syncTransform: true
                 })
                 .addComponent(ECSYTHREEX.Transform, {
-                  position: { x: 0, y: 2, z: 2 }
+                  position: {
+                    x: removedComponent.x,
+                    y: removedComponent.y,
+                    z: removedComponent.z
+                  }
                 })
-                .addComponent(FireworkExplosion)
-            }, dur)
-            console.log(component, "dur>>>", dur)
+            }
           })
         }
       }
@@ -81,12 +87,15 @@
         tail: {
           components: [FireworkTail, ECSYTHREEX.Transform],
           listen: {
-            removed: true
+            removed: true,
+            changed: true
           }
         }
       }
 
       //** FireworkExplosion **//
+
+      class FireworkExplosion extends ECSY.System {}
 
       FireworkExplosion.schema = {}
 
