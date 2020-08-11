@@ -46,7 +46,7 @@
                 transform.position.y += translating.y
                 transform.position.z += translating.z
               } else {
-                entity.removeComponent(FireworkTail)
+                entity.remove()
                 translating.x = transform.position.x
                 translating.y = transform.position.y
                 translating.z = transform.position.z
@@ -62,11 +62,12 @@
                 .createEntity("explosion")
                 .addComponent(PARTICLES.ParticleEmitter, {
                   particleMesh: sharedParticleMesh,
-                  atlas: "blob.png",
-                  count: 200,
-                  lifeTime: 5,
-                  colors: [new THREE.Color(0x655cfe)],
-                  scales: [1],
+
+                  atlas: "fireworks_sheet.png",
+                  textureFrame: { cols: 5, rows: 5 },
+                  count: 3,
+                  lifeTime: [5, 1],
+                  scales: [15, 30],
                   burst: 1,
                   radialAcceleration: 0.15,
                   syncTransform: true
@@ -78,7 +79,7 @@
                     z: removedComponent.z
                   }
                 })
-                .addComponent(FireworkExplosion)
+                .addComponent(FireworkExplosion, { timeExplosion: 3 + TIME })
             }
           })
         }
@@ -106,11 +107,11 @@
         execute(dt, t) {
           let listsExplosion = this.queries.explosion
 
-          listsExplosion.added.forEach(entity => {
+          listsExplosion.results.forEach(entity => {
             const component = entity.getComponent(FireworkExplosion)
-            let duraction = t - component.timeExplosion
-
-            console.log("duraction>>>", duraction)
+            if (t > component.timeExplosion) {
+              entity.remove()
+            }
           })
         }
       }

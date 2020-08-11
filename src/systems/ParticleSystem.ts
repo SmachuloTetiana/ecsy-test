@@ -11,7 +11,8 @@ import * as THREE from "three"
 import {
   createParticleEmitter,
   setEmitterMatrixWorld,
-  setEmitterTime
+  setEmitterTime,
+  deleteParticleEmitter
 } from "../three/ParticleEmitter.js"
 
 export class ParticleSystem extends System {
@@ -54,6 +55,19 @@ export class ParticleSystem extends System {
 
       setEmitterTime(emitterState.emitter3D, time)
     }
+
+    for (const entity of this.queries.emitters.removed) {
+      //const emitterState = entity.getComponent(ParticleEmitterState)
+      entity.removeComponent(ParticleEmitterState)
+    }
+
+    for (const entity of this.queries.emitterStates.removed) {
+      const emitterState = entity.getComponent(
+        ParticleEmitterState,
+        true
+      ) as ParticleEmitterState
+      deleteParticleEmitter(emitterState.emitter3D)
+    }
   }
 }
 
@@ -67,7 +81,10 @@ ParticleSystem.queries = {
   },
 
   emitterStates: {
-    components: [ParticleEmitterState]
+    components: [ParticleEmitterState],
+    listen: {
+      removed: true
+    }
   }
 }
 

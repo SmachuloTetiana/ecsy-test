@@ -10,8 +10,8 @@ export * from "./Util"
 import { isBrowser } from "./Util"
 
 import { World } from "ecsy"
-import { ParticleSystem } from "./systems"
-import { ParticleEmitter, ParticleEmitterState } from "./components"
+import {ParticleSystem} from "./systems";
+import {ParticleEmitter, ParticleEmitterState} from "./components";
 
 const DEFAULT_OPTIONS = {
   mouse: true,
@@ -25,7 +25,7 @@ export function initializeParticleSystem(
   world: World,
   options = DEFAULT_OPTIONS
 ): void {
-  if (options.debug) console.log("Initializingg particle system...")
+  if (options.debug) console.log("Initializing particle system...")
 
   if (!isBrowser)
     return console.error("Couldn't initialize particles, are you in a browser?")
@@ -38,9 +38,9 @@ export function initializeParticleSystem(
   }
 
   world
-    .registerSystem(ParticleSystem)
-    .registerComponent(ParticleEmitterState)
-    .registerComponent(ParticleEmitter)
+      .registerSystem(ParticleSystem)
+      .registerComponent(ParticleEmitterState)
+      .registerComponent(ParticleEmitter)
 
   if (options.debug) console.log("INPUT: Registered particle system.")
 }

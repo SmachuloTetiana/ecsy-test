@@ -125,6 +125,23 @@ export function createParticleEmitter(options, matrixWorld, time = 0) {
   return { startTime, startIndex, endIndex, mesh }
 }
 
+export function deleteParticleEmitter(emitter) {
+  //emitter.mesh.userData.nextIndex = emitter.startIndex;
+  for (let i = emitter.startIndex; i < emitter.endIndex; i++) {
+    despawn(
+      emitter.mesh.geometry,
+      i,
+    )
+  }
+
+  needsUpdate(emitter.mesh.geometry);
+
+}
+
+function despawn(geometry, index) {
+  setTimingsAt(geometry, index, 0, 0, 0, 0)
+}
+
 export function setEmitterTime(emitter, time): void {
   setMaterialTime(emitter.mesh.material, time)
 }
