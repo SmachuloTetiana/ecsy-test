@@ -20,7 +20,6 @@
       import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 
       const DEG2RAD = THREE.MathUtils.DEG2RAD
-      let TIME = 3
 
       /** FireworkTail **/
 
@@ -29,28 +28,27 @@
       FireworkTail.schema = {
         x: { type: ECSY.Types.Number, default: 0 },
         y: { type: ECSY.Types.Number, default: 0 },
-        z: { type: ECSY.Types.Number, default: 0 }
+        z: { type: ECSY.Types.Number, default: 0 },
+        time: { type: ECSY.Types.Number, default: 0 }
       }
 
       class FireworkTailSystem extends ECSY.System {
         execute(dt, t) {
           this.queries.tail.results.forEach(entity => {
-            const translating = entity.getComponent(FireworkTail)
+            const component = entity.getComponent(FireworkTail)
             const transform = entity.getMutableComponent(ECSYTHREEX.Transform)
-            if (t < 100) {
-              let dur = t - TIME
-              // console.log("dur>>>", dur)
+            let durationTail = t % component.time
+            let round = Math.round(durationTail)
 
-              if (dur < 0 && dur > -TIME) {
-                transform.position.x += translating.x
-                transform.position.y += translating.y
-                transform.position.z += translating.z
-              } else {
-                entity.remove()
-                translating.x = transform.position.x
-                translating.y = transform.position.y
-                translating.z = transform.position.z
-              }
+            if (round !== component.time) {
+              transform.position.x += component.x
+              transform.position.y += component.y
+              transform.position.z += component.z
+            } else {
+              entity.remove()
+              component.x = transform.position.x
+              component.y = transform.position.y
+              component.z = transform.position.z
             }
           })
 
@@ -79,7 +77,9 @@
                     z: removedComponent.z
                   }
                 })
-                .addComponent(FireworkExplosion, { timeExplosion: 3 + TIME })
+                .addComponent(FireworkExplosion, {
+                  time: 3 + removedComponent.time
+                })
             }
           })
         }
@@ -100,7 +100,7 @@
       class FireworkExplosion extends ECSY.Component {}
 
       FireworkExplosion.schema = {
-        timeExplosion: { type: ECSY.Types.Number, default: 1 }
+        time: { type: ECSY.Types.Number, default: 0 }
       }
 
       class FireworkExplosionSystem extends ECSY.System {
@@ -108,8 +108,9 @@
           let listsExplosion = this.queries.explosion
 
           listsExplosion.results.forEach(entity => {
-            const component = entity.getComponent(FireworkExplosion)
-            if (t > component.timeExplosion) {
+            let component = entity.getComponent(FireworkExplosion)
+
+            if (t > component.time) {
               entity.remove()
             }
           })
@@ -191,7 +192,7 @@
           syncTransform: true
         })
         .addComponent(ECSYTHREEX.Transform, {})
-        .addComponent(FireworkTail, { x: 0, y: 0.01, z: 0.01 })
+        .addComponent(FireworkTail, { x: 0, y: 0.01, z: 0.01, time: 3 })
         .addComponent(ECSYTHREEX.Parent, { value: scene })
 
       world.execute(0.000001, 0.000001)
