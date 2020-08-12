@@ -60,7 +60,6 @@
                 .createEntity("explosion")
                 .addComponent(PARTICLES.ParticleEmitter, {
                   particleMesh: sharedParticleMesh,
-
                   atlas: "fireworks_sheet.png",
                   textureFrame: { cols: 5, rows: 5 },
                   count: 3,
@@ -78,7 +77,7 @@
                   }
                 })
                 .addComponent(FireworkExplosion, {
-                  time: 3 + removedComponent.time
+                  time: 2 + t
                 })
             }
           })
@@ -182,6 +181,7 @@
 
       const tail = world
         .createEntity("tail")
+        .addObject3DComponent(circleGeometry.clone(), scene)
         .addComponent(PARTICLES.ParticleEmitter, {
           particleMesh: sharedParticleMesh,
           atlas: "blob.png",
